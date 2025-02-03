@@ -113,12 +113,63 @@ public class Model extends Observable {
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
+        // 1. 旋转棋盘，使得所有移动都朝向“上”方向进行处理
+
+        // 1. 旋转棋盘，使得所有移动都朝向“上”方向进行处理
+        board.setViewingPerspective(side);
+
+        for (int col = 0; col < board.size(); col++) {
+            if (tiltColumn(col)) {
+                changed = true;
+            }
+        }
+
+        // 3. 恢复棋盘的原始方向
+        board.setViewingPerspective(Side.NORTH);
 
         checkGameOver();
         if (changed) {
             setChanged();
         }
         return changed;
+    }
+    private boolean tiltColumn(int col) {
+        boolean moved = false;
+        int size = board.size();
+
+        boolean[] merged = new boolean[size];
+
+        for (int row = size - 2; row >= 0; row--) {  // 从倒数第二行开始向下处理
+            Tile t = board.tile(col, row);
+            if (t == null) {
+                continue;  // 当前格子为空，跳过
+            }
+
+            int newRow = row;
+            while (newRow + 1 < size && board.tile(col, newRow + 1) == null) {
+                newRow++;  // 移动到最上方可达的空格
+            }
+
+            if (newRow + 1 < size) {
+                Tile nextTile = board.tile(col, newRow + 1);
+                if (nextTile != null && nextTile.value() == t.value() && !merged[newRow + 1]) {
+                    board.move(col, newRow + 1, t);
+                    merged[newRow + 1] = true;
+                    score += board.tile(col, newRow + 1).value();
+                    moved = true;
+                } else if (newRow != row) {
+                    // 只是单纯向上移动
+                    board.move(col, newRow, t);
+                    moved = true;
+                }
+            } else if (newRow != row) {
+                // 只是单纯向上移动
+                board.move(col, newRow, t);
+                moved = true;
+            }
+        }
+
+        return moved;
     }
 
     /** Checks if the game is over and sets the gameOver variable
@@ -133,13 +184,30 @@ public class Model extends Observable {
         return maxTileExists(b) || !atLeastOneMoveExists(b);
     }
 
-    /** Returns true if at least one space on the Board is empty.
-     *  Empty spaces are stored as null.
-     * */
+    /**
+     * Returns true if at least one space on the Board is empty.
+     * Empty spaces are stored as null.
+     */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        int size = b.size();  // 获取棋盘大小
+        for (int i = 0; i <size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (b.tile(i, j) == null) {
+                    return true;
+                }
+
+            }
+
+
+        }
         return false;
+
     }
+
+
+
+
 
     /**
      * Returns true if any tile is equal to the maximum valid value.
@@ -147,9 +215,24 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        int size = b.size();  // 获取棋盘大小
+        int maxValue = MAX_PIECE;  // 最高的方块值
+
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                Tile t = b.tile(i, j);  // ✅ 正确获取 Tile
+                if (t != null && t.value() == maxValue) {  // ✅ 先检查 t 是否为空
+                    return true;
+                }
+            }
+        }
+
         return false;
+
     }
+
+    // 遍历结束，如果没有找到 MAX_PIECE，返回 false
+
 
     /**
      * Returns true if there are any valid moves on the board.
@@ -159,6 +242,42 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        int size = b.size();  // 获取棋盘大小
+        int maxValue = MAX_PIECE;  // 最高的方块值
+        for (int i = 0; i <size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (b.tile(i, j) == null) {
+                    return true;
+                }
+
+            }
+
+
+        }
+
+        for (int i = 0; i < size-1; i++) {
+            for (int j = 0; j < size; j++) {
+                Tile t1 = b.tile(i, j);  // ✅ 正确获取 Tile
+                //   Tile t2 = b.tile(i, j+1);
+                Tile t3 = b.tile(i+1, j);
+
+                if(t1.value()== t3.value()){
+                    return true;
+                }
+            }
+        }
+
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size-1; j++) {
+                Tile t1 = b.tile(i, j);  // ✅ 正确获取 Tile
+                Tile t2 = b.tile(i, j+1);
+                // Tile t3 = b.tile(i+1, j);
+
+                if(t1.value()== t2.value()){
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
